@@ -62,11 +62,17 @@ export default function Home() {
   const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount.replace(/,/g, ''))) * 100).toFixed(2) : '-';
 
   const shareLink = () => {
-    const data = { projectName, date, contractAmount, contractCapacity, rows };
+    const data = {
+      projectName,
+      date,
+      contractAmount,
+      contractCapacity,
+      rows,
+    };
     const encoded = encodeURIComponent(JSON.stringify(data));
     const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
     navigator.clipboard.writeText(url);
-    alert('복사 완료! 공유 시 복원됩니다.');
+    alert('복사 완료! 붙여넣기하면 공유된 값이 복원됩니다.');
   };
 
   const exportToExcel = () => {
@@ -85,6 +91,7 @@ export default function Home() {
       (r.수량 * r.단가)?.toLocaleString() || '',
       r.업체, r.비고
     ]);
+    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']);
     data.push(...body);
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
@@ -93,9 +100,14 @@ export default function Home() {
 
   return (
     <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <img src="/20250411_235807.png" alt="다빈이앤씨 로고" className="h-12" />
-        <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
+
+      {/* ✅ 다빈이앤씨 로고 및 링크 */}
+      <div className="text-center mb-6">
+        <img src="/logo-dabin.png" alt="다빈이앤씨 로고" className="mx-auto h-16 mb-2" />
+        <div className="flex justify-center gap-4 text-sm">
+          <a href="http://www.dabinenc.com" target="_blank" className="text-blue-400 hover:underline">다빈이앤씨 홈페이지</a>
+          <a href="https://blog.naver.com/dabincoltd2025" target="_blank" className="text-green-400 hover:underline">네이버 블로그</a>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
@@ -105,14 +117,10 @@ export default function Home() {
         <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
         <input value={execRate + '%'} readOnly className="bg-gray-800 p-2" placeholder="실행율" />
-      </div>
-
-      <div className="text-right text-lg font-bold text-yellow-400 mb-4">
-        총합계: {formatNumber(totalAmount)} 원
       </div>
 
       <div className="overflow-x-auto">
@@ -142,12 +150,30 @@ export default function Home() {
                 <td className="border px-1 py-1 text-center"><button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button></td>
               </tr>
             ))}
+            <tr className="bg-gray-800 font-bold">
+              <td colSpan={6} className="text-right px-2 py-1 border">총 합계금액</td>
+              <td className="text-right px-2 py-1 border">{formatNumber(totalAmount)}</td>
+              <td colSpan={3} className="border" />
+            </tr>
           </tbody>
         </table>
       </div>
 
+      <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
+        <div className="flex gap-2">
+          <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
+          <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
+          <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
+        </div>
+        <div className="text-right text-sm text-gray-300">
+          실행단가: {formatNumber(unitPrice)} 원/kW<br />
+          실행율: {execRate}%<br />
+          수익금액: {formatNumber(revenue)} 원
+        </div>
+      </div>
+
       <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
-        ※ 본 견적계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼 비밀유지건으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
+        ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
       </div>
     </div>
   );
