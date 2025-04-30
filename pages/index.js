@@ -62,13 +62,7 @@ export default function Home() {
   const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount.replace(/,/g, ''))) * 100).toFixed(2) : '-';
 
   const shareLink = () => {
-    const data = {
-      projectName,
-      date,
-      contractAmount,
-      contractCapacity,
-      rows,
-    };
+    const data = { projectName, date, contractAmount, contractCapacity, rows };
     const encoded = encodeURIComponent(JSON.stringify(data));
     const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
     navigator.clipboard.writeText(url);
@@ -91,7 +85,7 @@ export default function Home() {
       (r.수량 * r.단가)?.toLocaleString() || '',
       r.업체, r.비고
     ]);
-    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']);
+    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']); // 총합계
     data.push(...body);
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
@@ -101,15 +95,18 @@ export default function Home() {
   return (
     <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
 
-      {/* ✅ 다빈이앤씨 로고 및 링크 */}
+      {/* ✅ 다빈이앤씨 로고 + 링크 */}
       <div className="text-center mb-6">
-        <img src="/logo-dabin.png" alt="다빈이앤씨 로고" className="mx-auto h-16 mb-2" />
+        <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer">
+          <img src="/logo-dabin.png" alt="" className="mx-auto h-16 mb-2" />
+        </a>
         <div className="flex justify-center gap-4 text-sm">
-          <a href="http://www.dabinenc.com" target="_blank" className="text-blue-400 hover:underline">다빈이앤씨 홈페이지</a>
-          <a href="https://blog.naver.com/dabincoltd2025" target="_blank" className="text-green-400 hover:underline">네이버 블로그</a>
+          <a href="http://www.dabinenc.com" target="_blank" className="text-blue-400 hover:underline">홈페이지</a>
+          <a href="https://blog.naver.com/dabincoltd2025" target="_blank" className="text-green-400 hover:underline">블로그</a>
         </div>
       </div>
 
+      {/* ✅ 입력 영역 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
         <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
@@ -117,12 +114,14 @@ export default function Home() {
         <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
       </div>
 
+      {/* ✅ 계산 결과 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
         <input value={execRate + '%'} readOnly className="bg-gray-800 p-2" placeholder="실행율" />
       </div>
 
+      {/* ✅ 실행내역 테이블 */}
       <div className="overflow-x-auto">
         <table className="min-w-[900px] w-full text-sm border border-white mb-4">
           <thead className="bg-gray-700">
@@ -159,6 +158,7 @@ export default function Home() {
         </table>
       </div>
 
+      {/* ✅ 버튼 및 요약 */}
       <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
         <div className="flex gap-2">
           <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
@@ -172,6 +172,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ✅ 고지 문구 */}
       <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
         ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
       </div>
