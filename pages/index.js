@@ -85,7 +85,7 @@ export default function Home() {
       (r.수량 * r.단가)?.toLocaleString() || '',
       r.업체, r.비고
     ]);
-    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']); // 총합계
+    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']);
     data.push(...body);
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
@@ -94,8 +94,6 @@ export default function Home() {
 
   return (
     <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
-
-      {/* ✅ 다빈이앤씨 로고 + 링크 */}
       <div className="text-center mb-6">
         <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer">
           <img src="/logo-dabin.png" alt="" className="mx-auto h-16 mb-2" />
@@ -106,7 +104,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ✅ 입력 영역 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
         <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
@@ -114,14 +111,12 @@ export default function Home() {
         <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
       </div>
 
-      {/* ✅ 계산 결과 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
         <input value={execRate + '%'} readOnly className="bg-gray-800 p-2" placeholder="실행율" />
       </div>
 
-      {/* ✅ 실행내역 테이블 */}
       <div className="overflow-x-auto">
         <table className="min-w-[900px] w-full text-sm border border-white mb-4">
           <thead className="bg-gray-700">
@@ -135,18 +130,28 @@ export default function Home() {
             {rows.map((r, i) => (
               <tr key={r.id}>
                 {['공정','품목','규격','단위'].map(key => (
-                  <td key={key} className="border px-1 py-1"><input value={r[key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full" /></td>
+                  <td key={key} className="border px-1 py-1">
+                    <input value={r[key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
+                  </td>
                 ))}
                 {['수량','단가'].map(key => (
                   <td key={key} className="border px-1 py-1">
-                    <input value={formatNumber(r[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-right" />
+                    <input value={formatNumber(r[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-base text-right min-w-[100px] px-2 py-1" />
                   </td>
                 ))}
-                <td className="border px-2 py-1 text-right">{formatNumber(r.수량 * r.단가)}</td>
-                <td className="border px-1 py-1"><input value={r.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full" /></td>
-                <td className="border px-1 py-1"><input value={r.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full" /></td>
-                <td className="border px-1 py-1 text-center"><button onClick={() => addRowAt(i)} className="text-green-400">➕</button></td>
-                <td className="border px-1 py-1 text-center"><button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button></td>
+                <td className="border px-2 py-1 text-right text-base min-w-[100px]">{formatNumber(r.수량 * r.단가)}</td>
+                <td className="border px-1 py-1">
+                  <input value={r.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
+                </td>
+                <td className="border px-1 py-1">
+                  <input value={r.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
+                </td>
+                <td className="border px-1 py-1 text-center">
+                  <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
+                </td>
+                <td className="border px-1 py-1 text-center">
+                  <button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button>
+                </td>
               </tr>
             ))}
             <tr className="bg-gray-800 font-bold">
@@ -158,7 +163,6 @@ export default function Home() {
         </table>
       </div>
 
-      {/* ✅ 버튼 및 요약 */}
       <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
         <div className="flex gap-2">
           <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
@@ -172,7 +176,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ✅ 고지 문구 */}
       <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
         ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
       </div>
