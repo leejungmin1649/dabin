@@ -9,28 +9,19 @@ export default function Home() {
   const [rows, setRows] = useState([
     { id: 1, 공정: '주자재', 품목: '인버터', 규격: '125kW', 단위: '대', 수량: 1, 단가: 5500000, 업체: '', 비고: '' },
     { id: 2, 공정: '주자재', 품목: '구조물제작', 규격: '', 단위: 'KW', 수량: 100, 단가: 80000, 업체: '', 비고: '' },
-    { id: 3, 공정: '주자재', 품목: '송전설비', 규격: '저압반', 단위: '식', 수량: 1, 단가: 2000000, 업체: '', 비고: '' },
-    { id: 4, 공정: '공통공사', 품목: '토목공사', 규격: '', 단위: '평', 수량: 300, 단가: 30000, 업체: '', 비고: '' },
-    { id: 5, 공정: '건물태양광', 품목: '안전사다리', 규격: '', 단위: '식', 수량: 1, 단가: 1000000, 업체: '', 비고: '' },
   ]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('execution-data');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setRows(parsed.rows || []);
-      setProjectName(parsed.projectName || '');
-      setDate(parsed.date || '');
-      setContractAmount(parsed.contractAmount || '');
-      setContractCapacity(parsed.contractCapacity || 0);
-    }
-  }, []);
+  // 콤마 표시 함수
+  const formatNumber = (num) => {
+    const parsed = parseInt(num?.toString().replace(/,/g, ''));
+    return isNaN(parsed) ? '' : parsed.toLocaleString('ko-KR');
+  };
 
-  useEffect(() => {
-    localStorage.setItem('execution-data', JSON.stringify({
-      rows, projectName, date, contractAmount, contractCapacity
-    }));
-  }, [rows, projectName, date, contractAmount, contractCapacity]);
+  // 계약금액 입력 시 콤마 자동처리
+  const handleContractAmountChange = (value) => {
+    const onlyNumbers = value.replace(/[^\d]/g, '');
+    setContractAmount(onlyNumbers);
+  };
 
   const updateRow = (index, key, value) => {
     const newRows = [...rows];
@@ -58,17 +49,10 @@ export default function Home() {
     return rows.reduce((sum, row) => sum + (row.수량 * row.단가 || 0), 0);
   };
 
-  const formatNumber = (num) => {
-    return num?.toLocaleString('ko-KR') ?? '-';
-  };
-
-  const parseNumber = (value) => parseInt(value.toString().replace(/,/g, '')) || 0;
-
   const totalAmount = calculateTotal();
-  const parsedContractAmount = parseNumber(contractAmount);
-  const revenue = parsedContractAmount - totalAmount;
+  const revenue = parseInt(contractAmount.replace(/,/g, '')) - totalAmount;
   const unitPrice = contractCapacity ? Math.floor(totalAmount / contractCapacity) : 0;
-  const execRate = parsedContractAmount ? ((totalAmount / parsedContractAmount) * 100).toFixed(2) : '-';
+  const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount.replace(/,/g, ''))) * 100).toFixed(2) : '-';
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -78,7 +62,7 @@ export default function Home() {
       ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
       ['수익금액', revenue, '', '', '실행금액', totalAmount],
       [],
-      ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
+      ['공정', '품목', '규격', '단위', '수량', '단가', '금액', '업체', '비고']
     ];
     const body = rows.map(r => [
       r.공정, r.품목, r.규격, r.단위,
@@ -98,14 +82,24 @@ export default function Home() {
         <div><img src="/20250411_235807.png" className="h-12" /></div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
         <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
-        <input value={contractAmount} onChange={e => setContractAmount(e.target.value)} className="bg-gray-800 p-2" placeholder="계약금액" />
-        <input value={contractCapacity.toLocaleString('ko-KR')} onChange={e => setContractCapacity(parseFloat(e.target.value.replace(/,/g, '')) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
+        <input
+          value={formatNumber(contractAmount)}
+          onChange={e => handleContractAmountChange(e.target.value)}
+          className="bg-gray-800 p-2"
+          placeholder="계약금액"
+        />
+        <input
+          value={contractCapacity}
+          onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)}
+          className="bg-gray-800 p-2"
+          placeholder="계약용량"
+        />
         <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
       </div>
 
       <div className="overflow-x-auto">
-        <table className="table-auto w-full text-sm border border-white mb-4 min-w-[1000px]">
+        <table className="table-auto w-full text-sm border border-white mb-4 min-w-[800px]">
           <thead className="bg-gray-700">
             <tr>
               {['공정', '품목', '규격', '단위', '수량', '단가', '금액', '업체', '비고', '추가', '삭제'].map((col, idx) => (
@@ -127,18 +121,10 @@ export default function Home() {
                   </td>
                 ))}
                 <td className="border px-2 py-1 text-right">{formatNumber(row.수량 * row.단가)}</td>
-                <td className="border px-2 py-1">
-                  <input value={row.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <input value={row.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full" />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <button onClick={() => deleteRow(row.id)} className="text-red-400">❌</button>
-                </td>
+                <td className="border px-2 py-1"><input value={row.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full" /></td>
+                <td className="border px-2 py-1"><input value={row.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full" /></td>
+                <td className="border px-2 py-1 text-center"><button onClick={() => addRowAt(i)} className="text-green-400">➕</button></td>
+                <td className="border px-2 py-1 text-center"><button onClick={() => deleteRow(row.id)} className="text-red-400">❌</button></td>
               </tr>
             ))}
           </tbody>
@@ -155,7 +141,7 @@ export default function Home() {
           <div className="text-sm text-gray-300 mt-1">
             실행단가: {contractCapacity ? `${formatNumber(unitPrice)} 원/kW` : '-'}<br />
             실행율: {execRate}%<br />
-            <span className="text-sm font-semibold text-white">수익금액: {formatNumber(revenue)} 원</span>
+            수익금액: {formatNumber(revenue)} 원
           </div>
         </div>
       </div>
