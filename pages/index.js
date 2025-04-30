@@ -140,6 +140,10 @@ export default function Home() {
         </div>
         <div className="text-xl font-bold text-right sm:text-left">총합계: {formatNumber(totalAmount)} 원</div>
       </div>
+
+      <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
+        ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
+      </div>
     </div>
   );
 }
