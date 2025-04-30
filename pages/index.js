@@ -6,7 +6,6 @@ export default function Home() {
   const [date, setDate] = useState('2025년 04월 30일');
   const [contractAmount, setContractAmount] = useState('145000000');
   const [contractCapacity, setContractCapacity] = useState(100);
-  const [revenueAmount, setRevenueAmount] = useState('255000');
   const [rows, setRows] = useState([
     { id: 1, 공정: '주자재', 품목: '인버터', 규격: '125kW', 단위: '대', 수량: 1, 단가: 5500000, 업체: '', 비고: '' },
     { id: 2, 공정: '주자재', 품목: '구조물제작', 규격: '', 단위: 'KW', 수량: 100, 단가: 80000, 업체: '', 비고: '' },
@@ -24,15 +23,14 @@ export default function Home() {
       setDate(parsed.date || '');
       setContractAmount(parsed.contractAmount || '');
       setContractCapacity(parsed.contractCapacity || 0);
-      setRevenueAmount(parsed.revenueAmount || '');
     }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('execution-data', JSON.stringify({
-      rows, projectName, date, contractAmount, contractCapacity, revenueAmount
+      rows, projectName, date, contractAmount, contractCapacity
     }));
-  }, [rows, projectName, date, contractAmount, contractCapacity, revenueAmount]);
+  }, [rows, projectName, date, contractAmount, contractCapacity]);
 
   const updateRow = (index, key, value) => {
     const newRows = [...rows];
@@ -44,9 +42,12 @@ export default function Home() {
     setRows(newRows);
   };
 
-  const addRow = () => {
+  const addRowAt = (index) => {
     const nextId = rows.length ? Math.max(...rows.map(r => r.id)) + 1 : 1;
-    setRows([...rows, { id: nextId, 공정: '', 품목: '', 규격: '', 단위: '', 수량: 0, 단가: 0, 업체: '', 비고: '' }]);
+    const newRow = { id: nextId, 공정: '', 품목: '', 규격: '', 단위: '', 수량: 0, 단가: 0, 업체: '', 비고: '' };
+    const newRows = [...rows];
+    newRows.splice(index + 1, 0, newRow);
+    setRows(newRows);
   };
 
   const deleteRow = (id) => {
@@ -62,6 +63,9 @@ export default function Home() {
   };
 
   const totalAmount = calculateTotal();
+  const revenue = parseInt(contractAmount) - totalAmount;
+  const unitPrice = contractCapacity ? Math.floor(totalAmount / contractCapacity) : 0;
+  const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount)) * 100).toFixed(2) : '-';
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -69,7 +73,7 @@ export default function Home() {
       ['실행 내역서'],
       ['공사명', projectName, '', '', '작성일', date],
       ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
-      ['수익금액', revenueAmount, '', '', '실행금액', totalAmount],
+      ['수익금액', revenue, '', '', '실행금액', totalAmount],
       [],
       ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
     ];
@@ -91,16 +95,16 @@ export default function Home() {
         <div><img src="/20250411_235807.png" className="h-12" /></div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
         <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
-        <input value={contractAmount} onChange={e => setContractAmount(e.target.value)} className="bg-gray-800 p-2" placeholder="계약금액" />
-        <input value={revenueAmount} onChange={e => setRevenueAmount(e.target.value)} className="bg-gray-800 p-2" placeholder="수익금액" />
-        <input value={contractCapacity} onChange={e => setContractCapacity(e.target.value)} className="bg-gray-800 p-2" placeholder="계약용량" />
+        <input value={formatNumber(parseInt(contractAmount))} onChange={e => setContractAmount(e.target.value.replace(/,/g, ''))} className="bg-gray-800 p-2" placeholder="계약금액" />
+        <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
+        <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
       </div>
       <div className="overflow-x-auto">
         <table className="table-auto w-full text-sm border border-white mb-4">
           <thead className="bg-gray-700">
             <tr>
-              {['공정', '품목', '규격', '단위', '수량', '단가', '금액', '업체', '비고', '삭제'].map((col, idx) => (
+              {['공정', '품목', '규격', '단위', '수량', '단가', '금액', '업체', '비고', '추가', '삭제'].map((col, idx) => (
                 <th key={idx} className="border px-2 py-1 whitespace-nowrap">{col}</th>
               ))}
             </tr>
@@ -115,7 +119,7 @@ export default function Home() {
                 ))}
                 {['수량', '단가'].map(key => (
                   <td key={key} className="border px-2 py-1">
-                    <input value={row[key]?.toLocaleString('ko-KR')} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 text-right w-full" />
+                    <input value={formatNumber(row[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 text-right w-full" />
                   </td>
                 ))}
                 <td className="border px-2 py-1 text-right">{formatNumber(row.수량 * row.단가)}</td>
@@ -124,6 +128,9 @@ export default function Home() {
                 </td>
                 <td className="border px-2 py-1">
                   <input value={row.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full" />
+                </td>
+                <td className="border px-2 py-1 text-center">
+                  <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
                 </td>
                 <td className="border px-2 py-1 text-center">
                   <button onClick={() => deleteRow(row.id)} className="text-red-400">❌</button>
@@ -135,12 +142,17 @@ export default function Home() {
       </div>
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div className="flex gap-2">
-          <button onClick={addRow} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
+          <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 마지막에 행 추가</button>
           <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
         </div>
-        <div className="text-xl font-bold text-right sm:text-left">총합계: {formatNumber(totalAmount)} 원</div>
+        <div className="text-xl font-bold text-right sm:text-left">
+          총합계: {formatNumber(totalAmount)} 원
+          <div className="text-sm text-gray-300 mt-1">
+            실행단가: {contractCapacity ? `${formatNumber(unitPrice)} 원/kW` : '-'}<br />
+            실행율: {execRate}%
+          </div>
+        </div>
       </div>
-
       <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
         ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
       </div>
