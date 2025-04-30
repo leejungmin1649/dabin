@@ -54,25 +54,21 @@ export default function Home() {
     setRows(rows.filter(row => row.id !== id));
   };
 
-  const calculateTotal = () => {
-    return rows.reduce((sum, row) => sum + (row.수량 * row.단가 || 0), 0);
-  };
-
-  const formatNumber = (num) => {
-    return num?.toLocaleString('ko-KR') ?? '-';
-  };
+  const calculateTotal = () => rows.reduce((sum, row) => sum + (row.수량 * row.단가 || 0), 0);
+  const formatNumber = (num) => num?.toLocaleString('ko-KR') ?? '-';
 
   const totalAmount = calculateTotal();
-  const revenue = parseInt(contractAmount) - totalAmount;
+  const parsedContractAmount = parseInt(contractAmount.replace(/,/g, '')) || 0;
+  const revenue = parsedContractAmount - totalAmount;
   const unitPrice = contractCapacity ? Math.floor(totalAmount / contractCapacity) : 0;
-  const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount)) * 100).toFixed(2) : '-';
+  const execRate = parsedContractAmount ? ((totalAmount / parsedContractAmount) * 100).toFixed(2) : '-';
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
     const data = [
       ['실행 내역서'],
       ['공사명', projectName, '', '', '작성일', date],
-      ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
+      ['계약금액', parsedContractAmount, '', '', '계약용량', contractCapacity],
       ['수익금액', revenue, '', '', '실행금액', totalAmount],
       [],
       ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
@@ -95,17 +91,17 @@ export default function Home() {
         <div><img src="/20250411_235807.png" className="h-12" /></div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
         <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
-        <input value={formatNumber(parseInt(contractAmount))} onChange={e => setContractAmount(e.target.value.replace(/,/g, ''))} className="bg-gray-800 p-2" placeholder="계약금액" />
+        <input value={contractAmount} onChange={e => setContractAmount(e.target.value)} className="bg-gray-800 p-2" placeholder="계약금액" />
         <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
         <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
         <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
       </div>
       <div className="overflow-x-auto">
-        <table className="table-auto w-full text-sm border border-white mb-4">
+        <table className="table-auto w-full text-xs border border-white mb-4">
           <thead className="bg-gray-700">
             <tr>
               {['공정', '품목', '규격', '단위', '수량', '단가', '금액', '업체', '비고', '추가', '삭제'].map((col, idx) => (
-                <th key={idx} className="border px-2 py-1 whitespace-nowrap">{col}</th>
+                <th key={idx} className="border px-1 py-1 whitespace-nowrap">{col}</th>
               ))}
             </tr>
           </thead>
@@ -113,28 +109,20 @@ export default function Home() {
             {rows.map((row, i) => (
               <tr key={row.id}>
                 {['공정', '품목', '규격', '단위'].map(key => (
-                  <td key={key} className="border px-2 py-1">
-                    <input value={row[key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full" />
+                  <td key={key} className="border px-1 py-1">
+                    <input value={row[key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-xs" />
                   </td>
                 ))}
                 {['수량', '단가'].map(key => (
-                  <td key={key} className="border px-2 py-1">
-                    <input value={formatNumber(row[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 text-right w-full" />
+                  <td key={key} className="border px-1 py-1">
+                    <input value={formatNumber(row[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 text-right w-full text-xs" />
                   </td>
                 ))}
-                <td className="border px-2 py-1 text-right">{formatNumber(row.수량 * row.단가)}</td>
-                <td className="border px-2 py-1">
-                  <input value={row.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <input value={row.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full" />
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
-                </td>
-                <td className="border px-2 py-1 text-center">
-                  <button onClick={() => deleteRow(row.id)} className="text-red-400">❌</button>
-                </td>
+                <td className="border px-1 py-1 text-right text-xs">{formatNumber(row.수량 * row.단가)}</td>
+                <td className="border px-1 py-1"><input value={row.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full text-xs" /></td>
+                <td className="border px-1 py-1"><input value={row.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full text-xs" /></td>
+                <td className="border px-1 py-1 text-center"><button onClick={() => addRowAt(i)} className="text-green-400">➕</button></td>
+                <td className="border px-1 py-1 text-center"><button onClick={() => deleteRow(row.id)} className="text-red-400">❌</button></td>
               </tr>
             ))}
           </tbody>
@@ -145,15 +133,12 @@ export default function Home() {
           <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 마지막에 행 추가</button>
           <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
         </div>
-        <div className="text-xl font-bold text-right sm:text-left">
-          총합계: {formatNumber(totalAmount)} 원
-          <div className="text-sm text-gray-300 mt-1">
-            실행단가: {contractCapacity ? `${formatNumber(unitPrice)} 원/kW` : '-'}<br />
-            실행율: {execRate}%
-          </div>
+        <div className="text-sm sm:text-right">
+          <div className="font-bold text-lg">총합계: {formatNumber(totalAmount)} 원</div>
+          <div className="text-xs text-gray-300">실행단가: {contractCapacity ? `${formatNumber(unitPrice)} 원/kW` : '-'}<br />실행율: {execRate}%</div>
         </div>
       </div>
-      <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
+      <div className="mt-6 text-xs text-center text-gray-400 border-t border-gray-700 pt-4">
         ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
       </div>
     </div>
