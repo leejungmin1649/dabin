@@ -169,10 +169,13 @@ export default function Home() {
           <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
           <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
         </div>
-        <div className="text-right text-sm text-gray-400">
-          📊실행단가: {formatNumber(unitPrice)} 원/kW<br />
-          📈실행율: {execRate}%<br />
-          💰수익금액: {formatNumber(revenue)} 원
+
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 text-right leading-relaxed text-white w-full sm:w-auto text-sm sm:text-base font-semibold">
+          <div className="text-base sm:text-lg text-yellow-300 mb-2 font-semibold">💼 계약금액: {formatNumber(contractAmount)} 원</div>
+          <div className="text-base text-white mb-2 font-semibold">🧾 실행금액: {formatNumber(totalAmount)} 원</div>
+          <div className="mb-1">📊 실행단가: <span className="text-green-400">{formatNumber(unitPrice)} 원/kW</span></div>
+          <div className="mb-1">📈 실행율: <span className="text-blue-400">{execRate}%</span></div>
+          <div>💰 수익금액: <span className="text-red-400">{formatNumber(revenue)} 원</span></div>
         </div>
       </div>
 
