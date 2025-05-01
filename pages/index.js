@@ -64,7 +64,7 @@ export default function Home() {
   const shareLink = () => {
     const data = { projectName, date, contractAmount, contractCapacity, rows };
     const encoded = encodeURIComponent(JSON.stringify(data));
-    const url = ${window.location.origin}${window.location.pathname}?data=${encoded};
+    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
     navigator.clipboard.writeText(url);
     alert('복사 완료! 붙여넣기하면 공유된 값이 복원됩니다.');
   };
