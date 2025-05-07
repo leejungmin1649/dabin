@@ -69,28 +69,52 @@ export default function Home() {
     alert('복사 완료! 붙여넣기하면 공유된 값이 복원됩니다.');
   };
 
-  const exportToExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const data = [
-      ['실행 내역서'],
-      ['공사명', projectName, '', '', '작성일', date],
-      ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
-      ['수익금액', revenue, '', '', '실행금액', totalAmount],
-      [],
-      ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
-    ];
-    const body = rows.map(r => [
-      r.공정, r.품목, r.규격, r.단위,
-      r.수량 || '', r.단가?.toLocaleString() || '',
-      (r.수량 * r.단가)?.toLocaleString() || '',
-      r.업체, r.비고
-    ]);
-    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']);
-    data.push(...body);
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
-    XLSX.writeFile(wb, '실행내역서.xlsx');
-  };
+const exportToExcel = () => {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['실행 내역서'],
+    ['공사명', projectName, '', '', '작성일', date],
+    ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
+    ['수익금액', revenue, '', '', '실행금액', totalAmount],
+    [],
+    ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
+  ];
+
+  // body에 숫자는 그대로, toLocaleString은 화면용 포맷
+  const body = rows.map(r => [
+    r.공정,
+    r.품목,
+    r.규격,
+    r.단위,
+    r.수량 || 0,
+    r.단가 || 0,
+    r.수량 * r.단가 || 0,
+    r.업체,
+    r.비고
+  ]);
+  // 총합계도 숫자로 푸시
+  body.push(['', '', '', '',  '',  '', totalAmount, '', '']);
+  data.push(...body);
+
+  // 시트 생성
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  // F열(단가), G열(금액)에 숫자 서식(#,##0) 적용
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r + 6; R <= range.e.r; ++R) {
+    ['F','G'].forEach(col => {
+      const cell = ws[`${col}${R+1}`];
+      if (cell && typeof cell.v === 'number') {
+        cell.t = 'n';
+        cell.z = '#,##0';
+      }
+    });
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
+  XLSX.writeFile(wb, '실행내역서.xlsx');
+};
+
 
   const handleExcelUpload = (e) => {
     const file = e.target.files[0];
