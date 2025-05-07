@@ -92,6 +92,56 @@ export default function Home() {
     XLSX.writeFile(wb, '실행내역서.xlsx');
   };
 
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = evt.target.result;
+      const workbook = XLSX.read(data, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      try {
+        const projectNameValue = jsonData[1]?.[1] || '';
+        const dateValue = jsonData[1]?.[5] || '';
+        const contractAmountValue = jsonData[2]?.[1]?.toString().replace(/,/g, '') || '';
+        const contractCapacityValue = jsonData[2]?.[5] || '';
+
+        setProjectName(projectNameValue);
+        setDate(dateValue);
+        setContractAmount(contractAmountValue);
+        setContractCapacity(contractCapacityValue);
+
+        const startIndex = jsonData.findIndex(row => row[0] === '공정');
+        if (startIndex < 0) return;
+
+        const tableRows = jsonData.slice(startIndex + 1)
+          .filter(row => row.length >= 6 && row[0])
+          .map((row, i) => ({
+            id: i + 1,
+            공정: row[0] || '',
+            품목: row[1] || '',
+            규격: row[2] || '',
+            단위: row[3] || '',
+            수량: parseFloat(row[4]) || 0,
+            단가: parseFloat((row[5] || '').toString().replace(/,/g, '')) || 0,
+            업체: row[7] || '',
+            비고: row[8] || '',
+          }));
+
+        setRows(tableRows);
+      } catch (err) {
+        alert('엑셀 파일 구조가 잘못되었거나 파싱에 실패했습니다.');
+        console.error('엑셀 파싱 오류:', err);
+      }
+    };
+
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
       <div className="text-center mb-6">
@@ -164,10 +214,11 @@ export default function Home() {
       </div>
 
       <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
           <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
           <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
+          <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="bg-gray-800 px-4 py-2 text-white rounded border border-gray-600" />
         </div>
 
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 text-right leading-relaxed text-white w-full sm:w-auto text-sm sm:text-base font-semibold">
