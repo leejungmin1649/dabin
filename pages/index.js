@@ -80,7 +80,7 @@ const exportToExcel = () => {
     ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
   ];
 
-  // body에 숫자는 그대로, toLocaleString은 화면용 포맷
+  // 숫자 원본을 그대로 넣어 엑셀에서 서식 적용
   const body = rows.map(r => [
     r.공정,
     r.품목,
@@ -92,25 +92,27 @@ const exportToExcel = () => {
     r.업체,
     r.비고
   ]);
-  // 총합계도 숫자로 푸시
-  body.push(['', '', '', '',  '',  '', totalAmount, '', '']);
+  // 총합계 행
+  body.push(['', '', '', '', '', '', totalAmount, '', '']);
   data.push(...body);
 
   // 시트 생성
   const ws = XLSX.utils.aoa_to_sheet(data);
 
-  // F열(단가), G열(금액)에 숫자 서식(#,##0) 적용
+  // F열(단가), G열(금액)에 천 단위 쉼표 포맷(#,##0) 적용
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let R = range.s.r + 6; R <= range.e.r; ++R) {
     ['F','G'].forEach(col => {
-      const cell = ws[`${col}${R+1}`];
+      const cellRef = `${col}${R + 1}`;
+      const cell = ws[cellRef];
       if (cell && typeof cell.v === 'number') {
-        cell.t = 'n';
-        cell.z = '#,##0';
+        cell.t = 'n';        // 숫자형 지정
+        cell.z = '#,##0';    // 쉼표 포맷
       }
     });
   }
 
+  // 워크북에 시트 추가 & 파일 저장
   XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
   XLSX.writeFile(wb, '실행내역서.xlsx');
 };
