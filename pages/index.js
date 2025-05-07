@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
 import * as XLSX from 'xlsx';
+import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 
 export default function Home() {
   const [projectName, setProjectName] = useState('');
@@ -21,11 +22,12 @@ export default function Home() {
 
   // URL 파라미터 복원
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const data = urlParams.get('data');
-    if (data) {
+    const params = new URLSearchParams(window.location.search);
+    const dataParam = params.get('data');
+    if (dataParam) {
       try {
-        const decoded = JSON.parse(decodeURIComponent(data));
+        const jsonString = decompressFromEncodedURIComponent(dataParam);
+        const decoded = JSON.parse(jsonString);
         setProjectName(decoded.projectName || '');
         setDate(decoded.date || '');
         setContractAmount(decoded.contractAmount || '');
@@ -49,9 +51,7 @@ export default function Home() {
     return isNaN(n) ? '' : n.toLocaleString('ko-KR');
   };
 
-  const handleContractAmountChange = (val) => {
-    setContractAmount(val.replace(/[^\d]/g, ''));
-  };
+  const handleContractAmountChange = (val) => setContractAmount(val.replace(/[^\d]/g, ''));
 
   const updateRow = (index, key, value) => {
     const newRows = [...rows];
@@ -83,7 +83,8 @@ export default function Home() {
   // URL 공유
   const shareLink = () => {
     const payload = { projectName, date, contractAmount, contractCapacity, rows };
-    const url = `${window.location.origin}${window.location.pathname}?data=${encodeURIComponent(JSON.stringify(payload))}`;
+    const encoded = compressToEncodedURIComponent(JSON.stringify(payload));
+    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
     navigator.clipboard.writeText(url);
     alert('복사 완료! 붙여넣기하면 복원됩니다.');
   };
@@ -118,7 +119,6 @@ export default function Home() {
         setRows(tableRows);
       } catch (err) {
         alert('엑셀 파일 구조가 잘못되었거나 파싱에 실패했습니다.');
-        console.error(err);
       }
     };
     reader.readAsBinaryString(file);
@@ -159,11 +159,19 @@ export default function Home() {
   // 카카오톡 공유
   const handleKakaoShare = () => {
     const shareUrl = window.location.href;
+    const description = [
+      `프로젝트: ${projectName}`,
+      `작성일: ${date}`,
+      `계약금액: ${formatNumber(contractAmount)}원`,
+      `실행금액: ${formatNumber(totalAmount)}원`,
+      `수익금액: ${formatNumber(revenue)}원`,
+    ].join('\n');
+
     window.Kakao.Link.sendDefault({
       objectType: 'feed',
       content: {
         title: projectName || '실행 내역서',
-        description: `계약금액: ${formatNumber(contractAmount)}원\n수익금액: ${formatNumber(revenue)}원`,
+        description,
         imageUrl: 'https://dabin-78.vercel.app/logo-dabin.png',
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
       },
@@ -182,7 +190,7 @@ export default function Home() {
         {/* 상단 로고 & 링크 */}
         <div className="text-center mb-6">
           <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer">
-            <img src="/logo-dabin.png" alt="" className="mx-auto h-16 mb-2" />
+            <img src="/logo-dabin.png" alt="로고" className="mx-auto h-16 mb-2" />
           </a>
           <div className="flex justify-center gap-4 text-sm">
             <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">홈페이지</a>
@@ -220,7 +228,8 @@ export default function Home() {
                   <td className="border px-1 py-1"><input value={r.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full px-2 py-1" /></td>
                   <td className="border px-1 py-1 text-center"><button onClick={() => addRowAt(i)} className="text-green-400">➕</button></td>
                   <td className="border px-1 py-1 text-center"><button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button></td>
-                </tr>))}
+                </tr>
+              ))}
               <tr className="bg-gray-800 font-bold">
                 <td colSpan={6} className="text-right px-2 py-1 border">총 합계금액</td><td className="text-right px-2 py-1 border">{formatNumber(totalAmount)}</td><td colSpan={3} className="border"></td>
               </tr>
@@ -251,7 +260,7 @@ export default function Home() {
         </div>
         {/* 고지문구 */}
         <div className="text-center text-sm text-gray-400 border-t border-gray-700 pt-4">
-          ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
+          ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 법적 책임을 물을 수 있습니다.
         </div>
       </div>
     </>
