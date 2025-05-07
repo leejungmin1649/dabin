@@ -157,31 +157,35 @@ export default function Home() {
   };
 
   // 카카오톡 공유
-  const handleKakaoShare = () => {
-    const shareUrl = window.location.href;
-    const description = [
-      `프로젝트: ${projectName}`,
-      `작성일: ${date}`,
-      `계약금액: ${formatNumber(contractAmount)}원`,
-      `실행금액: ${formatNumber(totalAmount)}원`,
-      `수익금액: ${formatNumber(revenue)}원`,
-    ].join('\n');
+ const handleKakaoShare = () => {
+  const payload = { projectName, date, contractAmount, contractCapacity, rows };
+  const encoded = compressToEncodedURIComponent(JSON.stringify(payload));
+  const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
+  
+  const description = [
+    `프로젝트: ${projectName}`,
+    `작성일: ${date}`,
+    `계약금액: ${formatNumber(contractAmount)}원`,
+    `실행금액: ${formatNumber(totalAmount)}원`,
+    `수익금액: ${formatNumber(revenue)}원`,
+  ].join('\n');
 
-    window.Kakao.Link.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: projectName || '실행 내역서',
-        description,
-        imageUrl: 'https://dabin-78.vercel.app/logo-dabin.png',
-        link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
-      },
-      buttons: [
-        { title: '웹에서 보기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
-        { title: '엑셀 다운로드', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
-      ]
-    });
-    setShareCount(prev => prev + 1);
-  };
+  window.Kakao.Link.sendDefault({
+    objectType: 'feed',
+    content: {
+      title: projectName || '실행 내역서',
+      description,
+      imageUrl: 'https://dabin-78.vercel.app/logo-dabin.png',
+      link: { mobileWebUrl: shareUrl, webUrl: shareUrl }
+    },
+    buttons: [
+      { title: '웹에서 보기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+      { title: '엑셀 다운로드', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }
+    ]
+  });
+
+  setShareCount(prev => prev + 1);
+};
 
   return (
     <>
