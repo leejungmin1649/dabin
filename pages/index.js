@@ -223,6 +223,17 @@ export default function Home() {
             </tbody>
           </table>
         </div>
+        {/* 버튼 그룹 전 결과 요약 */}
+        <div className="flex gap-4 mb-4 justify-end">
+          <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 text-right text-white w-full sm:w-auto">
+            <div className="text-base sm:text-lg text-purple-400 mb-2 font-semibold">📦 계약용량: {contractCapacity} kW</div>
+            <div className="text-base sm:text-lg text-yellow-300 mb-2 font-semibold">💼 계약금액: {formatNumber(contractAmount)} 원</div>
+            <div className="text-base text-white mb-2 font-semibold">🧾 실행금액: {formatNumber(totalAmount)} 원</div>
+            <div className="mb-1">📊 실행단가: <span className="text-green-400">{formatNumber(unitPrice)} 원/kW</span></div>
+            <div className="mb-1">📈 실행율: <span className="text-blue-400">{execRate}%</span></div>
+            <div>💰 수익금액: <span className="text-red-400">{formatNumber(revenue)} 원</span></div>
+          </div>
+        </div>
         {/* 버튼 그룹 */}
         <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
           <div className="flex gap-2 flex-wrap">
