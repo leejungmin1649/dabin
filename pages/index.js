@@ -184,6 +184,10 @@ export default function Home() {
           <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer">
             <img src="/logo-dabin.png" alt="" className="mx-auto h-16 mb-2" />
           </a>
+          <div className="flex justify-center gap-4 text-sm">
+            <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">홈페이지</a>
+            <a href="https://blog.naver.com/dabincoltd2025" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">블로그</a>
+          </div>
         </div>
         {/* 입력 필드 */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
