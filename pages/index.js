@@ -1,3 +1,4 @@
+// 필요한 import 유지
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
@@ -7,6 +8,19 @@ export default function Home() {
   const [contractAmount, setContractAmount] = useState('');
   const [contractCapacity, setContractCapacity] = useState('');
   const [rows, setRows] = useState([]);
+
+  const options = {
+    공정: ['주자재', '공통공사', '건물태양광', '토지태양광', '주차장태양광', '인허가', '기타'],
+    품목: [
+      '모듈', '인버터', '구조물', '송전설비(저압)', '송전설비(고압)', '모니터링', '태양광감시제어',
+      '구조물 및 모듈설치', '전기공사', '안전사다리', '안전구조물', '전기실설치', '단락 및 접지공사',
+      '기초공사', '전기설계감리', '구조안전검토', '사용전검사', '구조검토현장실측', '지붕공사',
+      '건물구조공사', '표준시설부담금액', '영업비', '소규모환경영향평가', '정밀안전진단',
+      '개발행위용역', '토지비용', '민원비용', '컨설팅비용', '토목공사', '1차인입공사',
+      '관리비 및 이윤', '장비사용료', '팩토링수수료', '역전력계량기(한전)', '전력거래소계량기', 'CCTV'
+    ],
+    단위: ['장', '대', 'KW', '식', 'M', '㎡']
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -61,178 +75,62 @@ export default function Home() {
   const unitPrice = contractCapacity ? Math.floor(totalAmount / contractCapacity) : 0;
   const execRate = contractAmount ? ((totalAmount / parseInt(contractAmount.replace(/,/g, ''))) * 100).toFixed(2) : '-';
 
-  const shareLink = () => {
-    const data = { projectName, date, contractAmount, contractCapacity, rows };
-    const encoded = encodeURIComponent(JSON.stringify(data));
-    const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
-    navigator.clipboard.writeText(url);
-    alert('복사 완료! 붙여넣기하면 공유된 값이 복원됩니다.');
-  };
-
-  const exportToExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const data = [
-      ['실행 내역서'],
-      ['공사명', projectName, '', '', '작성일', date],
-      ['계약금액', contractAmount, '', '', '계약용량', contractCapacity],
-      ['수익금액', revenue, '', '', '실행금액', totalAmount],
-      [],
-      ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
-    ];
-    const body = rows.map(r => [
-      r.공정, r.품목, r.규격, r.단위,
-      r.수량 || '', r.단가?.toLocaleString() || '',
-      (r.수량 * r.단가)?.toLocaleString() || '',
-      r.업체, r.비고
-    ]);
-    body.push(['', '', '', '', '', '', formatNumber(totalAmount), '', '']);
-    data.push(...body);
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
-    XLSX.writeFile(wb, '실행내역서.xlsx');
-  };
-
-  const handleExcelUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const data = evt.target.result;
-      const workbook = XLSX.read(data, { type: 'binary' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-      try {
-        const projectNameValue = jsonData[1]?.[1] || '';
-        const dateValue = jsonData[1]?.[5] || '';
-        const contractAmountValue = jsonData[2]?.[1]?.toString().replace(/,/g, '') || '';
-        const contractCapacityValue = jsonData[2]?.[5] || '';
-
-        setProjectName(projectNameValue);
-        setDate(dateValue);
-        setContractAmount(contractAmountValue);
-        setContractCapacity(contractCapacityValue);
-
-        const startIndex = jsonData.findIndex(row => row[0] === '공정');
-        if (startIndex < 0) return;
-
-        const tableRows = jsonData.slice(startIndex + 1)
-          .filter(row => row.length >= 6 && row[0])
-          .map((row, i) => ({
-            id: i + 1,
-            공정: row[0] || '',
-            품목: row[1] || '',
-            규격: row[2] || '',
-            단위: row[3] || '',
-            수량: parseFloat(row[4]) || 0,
-            단가: parseFloat((row[5] || '').toString().replace(/,/g, '')) || 0,
-            업체: row[7] || '',
-            비고: row[8] || '',
-          }));
-
-        setRows(tableRows);
-      } catch (err) {
-        alert('엑셀 파일 구조가 잘못되었거나 파싱에 실패했습니다.');
-        console.error('엑셀 파싱 오류:', err);
-      }
-    };
-
-    reader.readAsBinaryString(file);
+  const renderSelectOrInput = (i, key) => {
+    if (options[key]) {
+      return (
+        <select value={rows[i][key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full px-2 py-1">
+          <option value="">선택</option>
+          {options[key].map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <input value={rows[i][key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full px-2 py-1" />
+    );
   };
 
   return (
-    <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
-      <div className="text-center mb-6">
-        <a href="http://www.dabinenc.com" target="_blank" rel="noopener noreferrer">
-          <img src="/logo-dabin.png" alt="" className="mx-auto h-16 mb-2" />
-        </a>
-        <div className="flex justify-center gap-4 text-sm">
-          <a href="http://www.dabinenc.com" target="_blank" className="text-blue-400 hover:underline">홈페이지</a>
-          <a href="https://blog.naver.com/dabincoltd2025" target="_blank" className="text-green-400 hover:underline">블로그</a>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
-        <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
-        <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
-        <input value={formatNumber(contractAmount)} onChange={e => handleContractAmountChange(e.target.value)} className="bg-gray-800 p-2" placeholder="계약금액" />
-        <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <input value={formatNumber(revenue)} readOnly className="bg-gray-800 p-2" placeholder="수익금액" />
-        <input value={formatNumber(totalAmount)} readOnly className="bg-gray-800 p-2" placeholder="실행금액" />
-        <input value={execRate + '%'} readOnly className="bg-gray-800 p-2" placeholder="실행율" />
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-[900px] w-full text-sm border border-white mb-4">
-          <thead className="bg-gray-700">
-            <tr>
-              {['공정','품목','규격','단위','수량','단가','금액','업체','비고','추가','삭제'].map(h => (
-                <th key={h} className="border px-2 py-1">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.id}>
-                {['공정','품목','규격','단위'].map(key => (
-                  <td key={key} className="border px-1 py-1">
-                    <input value={r[key]} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
-                  </td>
-                ))}
-                {['수량','단가'].map(key => (
-                  <td key={key} className="border px-1 py-1">
-                    <input value={formatNumber(r[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-base text-right min-w-[100px] px-2 py-1" />
-                  </td>
-                ))}
-                <td className="border px-2 py-1 text-right text-base min-w-[100px]">{formatNumber(r.수량 * r.단가)}</td>
-                <td className="border px-1 py-1">
-                  <input value={r.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
-                </td>
-                <td className="border px-1 py-1">
-                  <input value={r.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
-                </td>
-                <td className="border px-1 py-1 text-center">
-                  <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
-                </td>
-                <td className="border px-1 py-1 text-center">
-                  <button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button>
-                </td>
-              </tr>
+    <div className="overflow-x-auto">
+      <table className="min-w-[900px] w-full text-sm border border-white mb-4">
+        <thead className="bg-gray-700">
+          <tr>
+            {['공정','품목','규격','단위','수량','단가','금액','업체','비고','추가','삭제'].map(h => (
+              <th key={h} className="border px-2 py-1">{h}</th>
             ))}
-            <tr className="bg-gray-800 font-bold">
-              <td colSpan={6} className="text-right px-2 py-1 border">총 합계금액</td>
-              <td className="text-right px-2 py-1 border">{formatNumber(totalAmount)}</td>
-              <td colSpan={3} className="border" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id}>
+              {['공정','품목','규격','단위'].map(key => (
+                <td key={key} className="border px-1 py-1">
+                  {renderSelectOrInput(i, key)}
+                </td>
+              ))}
+              {['수량','단가'].map(key => (
+                <td key={key} className="border px-1 py-1">
+                  <input value={formatNumber(r[key])} onChange={e => updateRow(i, key, e.target.value)} className="bg-gray-800 w-full text-base text-right min-w-[100px] px-2 py-1" />
+                </td>
+              ))}
+              <td className="border px-2 py-1 text-right text-base min-w-[100px]">{formatNumber(r.수량 * r.단가)}</td>
+              <td className="border px-1 py-1">
+                <input value={r.업체} onChange={e => updateRow(i, '업체', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
+              </td>
+              <td className="border px-1 py-1">
+                <input value={r.비고} onChange={e => updateRow(i, '비고', e.target.value)} className="bg-gray-800 w-full text-base min-w-[120px] px-2 py-1" />
+              </td>
+              <td className="border px-1 py-1 text-center">
+                <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
+              </td>
+              <td className="border px-1 py-1 text-center">
+                <button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button>
+              </td>
             </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
-          <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
-          <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
-          <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="bg-gray-800 px-4 py-2 text-white rounded border border-gray-600" />
-        </div>
-
-        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 text-right leading-relaxed text-white w-full sm:w-auto text-sm sm:text-base font-semibold">
-          <div className="text-base sm:text-lg text-yellow-300 mb-2 font-semibold">💼 계약금액: {formatNumber(contractAmount)} 원</div>
-          <div className="text-base text-white mb-2 font-semibold">🧾 실행금액: {formatNumber(totalAmount)} 원</div>
-          <div className="mb-1">📊 실행단가: <span className="text-green-400">{formatNumber(unitPrice)} 원/kW</span></div>
-          <div className="mb-1">📈 실행율: <span className="text-blue-400">{execRate}%</span></div>
-          <div>💰 수익금액: <span className="text-red-400">{formatNumber(revenue)} 원</span></div>
-        </div>
-      </div>
-
-      <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
-        ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
