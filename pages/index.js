@@ -78,7 +78,51 @@ export default function Home() {
     alert('복사 완료! 붙여넣기하면 복원됩니다.');
   };
 
-  // 엑셀 다운로드 (쉼표 포맷 적용)
+  // 엑셀 업로드
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = evt.target.result;
+      const workbook = XLSX.read(data, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      try {
+        const pName = jsonData[1]?.[1] || '';
+        const d = jsonData[1]?.[5] || '';
+        const cAmt = jsonData[2]?.[1]?.toString().replace(/,/g, '') || '';
+        const cCap = jsonData[2]?.[5] || '';
+        setProjectName(pName);
+        setDate(d);
+        setContractAmount(cAmt);
+        setContractCapacity(cCap);
+        const startIndex = jsonData.findIndex(row => row[0] === '공정');
+        if (startIndex < 0) return;
+        const tableRows = jsonData.slice(startIndex + 1)
+          .filter(row => row.length >= 6 && row[0])
+          .map((row, i) => ({
+            id: i + 1,
+            공정: row[0] || '',
+            품목: row[1] || '',
+            규격: row[2] || '',
+            단위: row[3] || '',
+            수량: parseFloat(row[4]) || 0,
+            단가: parseFloat(row[5]?.toString().replace(/,/g, '')) || 0,
+            업체: row[7] || '',
+            비고: row[8] || '',
+          }));
+        setRows(tableRows);
+      } catch (err) {
+        alert('엑셀 파일 구조가 잘못되었거나 파싱에 실패했습니다.');
+        console.error('엑셀 파싱 오류:', err);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  // 엑셀 다운로드
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
     const data = [
@@ -89,21 +133,13 @@ export default function Home() {
       [],
       ['공정','품목','규격','단위','수량','단가','금액','업체','비고']
     ];
-
     const body = rows.map(r => [
-      r.공정,
-      r.품목,
-      r.규격,
-      r.단위,
-      r.수량 || 0,
-      r.단가 || 0,
-      r.수량 * r.단가 || 0,
-      r.업체,
-      r.비고
+      r.공정, r.품목, r.규격, r.단위,
+      r.수량 || 0, r.단가 || 0, r.수량 * r.단가 || 0,
+      r.업체, r.비고
     ]);
     body.push(['', '', '', '', '', '', totalAmount, '', '']);
     data.push(...body);
-
     const ws = XLSX.utils.aoa_to_sheet(data);
     const range = XLSX.utils.decode_range(ws['!ref']);
     for (let R = range.s.r + 6; R <= range.e.r; ++R) {
@@ -115,12 +151,11 @@ export default function Home() {
         }
       });
     }
-
     XLSX.utils.book_append_sheet(wb, ws, '실행내역서');
     XLSX.writeFile(wb, '실행내역서.xlsx');
   };
 
-  // 카카오톡 공유
+  // Kakao 링크 공유
   const handleKakaoShare = () => {
     const shareUrl = window.location.href;
     window.Kakao.Link.sendDefault({
@@ -140,9 +175,7 @@ export default function Home() {
 
   return (
     <>
-      {/* Kakao SDK */}
       <Script src="https://developers.kakao.com/sdk/js/kakao.min.js" strategy="beforeInteractive" />
-
       <div className="bg-gray-900 text-white p-4 sm:p-8 min-h-screen">
         {/* 상단 로고 & 링크 */}
         <div className="text-center mb-6">
@@ -202,37 +235,3 @@ export default function Home() {
                   </td>
                   <td className="border px-1 py-1 text-center">
                     <button onClick={() => addRowAt(i)} className="text-green-400">➕</button>
-                  </td>
-                  <td className="border px-1 py-1 text-center">
-                    <button onClick={() => deleteRow(r.id)} className="text-red-400">❌</button>
-                  </td>
-                </tr>
-              ))}
-              <tr className="bg-gray-800 font-bold">
-                <td colSpan={6} className="text-right px-2 py-1 border">총 합계금액</td>
-                <td className="text-right px-2 py-1 border">{formatNumber(totalAmount)}</td>
-                <td colSpan={3} className="border" />
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* 버튼 그룹 */}
-        <div className="flex flex-wrap justify-between items-start gap-2 mt-4">
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => addRowAt(rows.length - 1)} className="bg-blue-600 px-4 py-2 rounded text-white">➕ 행 추가</button>
-            <button onClick={exportToExcel} className="bg-yellow-500 px-4 py-2 rounded text-black">📥 Excel 다운로드</button>
-            <button onClick={shareLink} className="bg-green-600 px-4 py-2 rounded text-white">🔗 URL 공유</button>
-            <button onClick={handleKakaoShare} className="bg-yellow-600 px-4 py-2 rounded text-white">🟨 카카오톡 공유</button>
-            <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="bg-gray-800 px-4 py-2 text-white rounded border border-gray-600" />
-          </div>
-        </div>
-
-        {/* 고지문구 */}
-        <div className="mt-6 text-sm text-center text-gray-400 border-t border-gray-700 pt-4">
-          ※ 본 실행계산기는 다빈이앤씨 임직원을 위한 내부 전용 플랫폼으로, 무단 유출 및 외부 사용 시 저작권 침해로 간주되어 법적 책임을 물을 수 있습니다.
-        </div>
-      </div>
-    </>
-  );
-}
