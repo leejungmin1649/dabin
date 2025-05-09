@@ -206,7 +206,7 @@ export default function Home() {
           <input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-gray-800 p-2" placeholder="공사명" />
           <input value={date} onChange={e => setDate(e.target.value)} className="bg-gray-800 p-2" placeholder="작성일" />
           <input value={formatNumber(contractAmount)} onChange={e => handleContractAmountChange(e.target.value)} className="bg-gray-800 p-2" placeholder="계약금액" />
-          <input value={contractCapacity} onChange={e => setContractCapacity(parseFloat(e.target.value) || 0)} className="bg-gray-800 p-2" placeholder="계약용량" />
+          <input value={contractCapacity} onChange={e => setContractCapacity(e.target.value)} type="number" step="0.1" className="bg-gray-800 p-2" placeholder="계약용량" />
         </div>
         {/* 결과 요약 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
